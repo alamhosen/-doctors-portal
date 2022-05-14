@@ -1,48 +1,69 @@
 import React from 'react';
 import auth from '../../firebase.init';
-import { useSignInWithEmailAndPassword, useSignInWithGoogle } from 'react-firebase-hooks/auth';
+import { useCreateUserWithEmailAndPassword, useSignInWithGoogle, useUpdateProfile } from 'react-firebase-hooks/auth';
 import { useForm } from "react-hook-form";
 import Loading from '../Shared/Loading';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
-const Login = () => {
+const SignUp = () => {
     const [signInWithGoogle, googleUser, GoogleLoading, googleError] = useSignInWithGoogle(auth);
     const { register, formState: { errors }, handleSubmit } = useForm();
+    const [updateProfile, updating, updateError] = useUpdateProfile(auth);
 
     const [
-        signInWithEmailAndPassword,
+        createUserWithEmailAndPassword,
         user,
         loading,
         error,
-      ] = useSignInWithEmailAndPassword(auth);
+    ] = useCreateUserWithEmailAndPassword(auth);
 
-      let signinError;
+    let signupError;
+    const navigate = useNavigate();
 
-      if(error || googleError){
-        signinError = <p className='text-red-500 mb-3 text-center'><small>{error?.message || googleError?.message}</small></p>
-      }
-
-      if(loading || GoogleLoading){
-          return <Loading></Loading>
-      }
-
-    if (user || googleUser) {
-        console.log(googleUser);
+    if (error || googleError) {
+        signupError = <p className='text-red-500 mb-3 text-center'><small>{error?.message || googleError?.message}</small></p>
     }
 
-    const onSubmit = data => {
-        signInWithEmailAndPassword(data.email, data.password);
+    if (loading || GoogleLoading) {
+        return <Loading></Loading>
+    }
+
+    if (user || googleUser) {
+        console.log(user, googleUser);
+    }
+
+    const onSubmit = async data => {
+        await createUserWithEmailAndPassword(data.email, data.password);
+        await updateProfile({ displayName:data.name });
+        navigate('/appointment');
         console.log(data)
     };
-
     return (
         <div className='flex justify-center items-center h-screen'>
             <div className="card w-96 bg-base-100 shadow-xl">
                 <div className="card-body">
-                    <h2 className="text-center text-2xl">Login</h2>
+                    <h2 className="text-center text-2xl">Sign Up</h2>
 
                     <form onSubmit={handleSubmit(onSubmit)}>
 
+                        <div className="form-control w-full max-w-xs">
+                            <label className="label">
+                                <span className="label-text">Name</span>
+                            </label>
+                            <input
+                                {...register("name", {
+                                    required: {
+                                        value: true,
+                                        message: 'Name is Required'
+                                    }
+                                })}
+                                type="text"
+                                placeholder="Your Name" className="input input-bordered w-full max-w-xs"
+                            />
+                            <label className="label">
+                                {errors.name?.type === 'required' && <span className="label-text-alt text-red-500">{errors.name.message}</span>}
+                            </label>
+                        </div>
                         <div className="form-control w-full max-w-xs">
                             <label className="label">
                                 <span className="label-text">Email</span>
@@ -95,10 +116,10 @@ const Login = () => {
 
                             </label>
                         </div>
-                        {signinError}
-                        <input className='btn w-full max-w-xs' type="submit" value='Login' />
+                        {signupError}
+                        <input className='btn w-full max-w-xs' type="submit" value='Sign Up' />
                     </form>
-                    <p className='text-center'><small>New to doctors portal? <Link className='text-secondary' to='/signup'>Create new account</Link> </small></p>
+                    <p className='text-center'><small>Already have an account? <Link className='text-secondary' to='/login'>Please Login</Link> </small></p>
 
                     <div className="divider">OR</div>
                     <button
@@ -111,4 +132,4 @@ const Login = () => {
     );
 };
 
-export default Login;
+export default SignUp;
